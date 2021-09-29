@@ -25,6 +25,7 @@ func (p PairList) Swap(i, j int) { p[i], p[j] = p[j], p[i] }
 func (p PairList) Len() int { return len(p) }
 func (p PairList) Less(i, j int) bool { return p[i].score < p[j].score }
 
+// TODO Use heap for better performance?
 func firstSuggestions(m Suggestions, size int) PairList {
 	p := make(PairList, len(m))
 	i := 0
@@ -33,5 +34,12 @@ func firstSuggestions(m Suggestions, size int) PairList {
 		i += 1
 	}
 	sort.Sort(sort.Reverse(p))
-	return p[:size]
+	return p[:min(size, len(m))]
+}
+
+func min(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
 }

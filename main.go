@@ -10,8 +10,16 @@ import (
 
 type PhoneNumber string // TODO: Better memory usage than string ?
 
+type LinkedEdge struct {
+	edge Edge
+	nextEdge *LinkedEdge
+	nextReverseEdge *LinkedEdge
+}
+
 type Node struct {
 	phoneNumber PhoneNumber
+	firstEdge *LinkedEdge
+	firstReverseEdge *LinkedEdge
 }
 
 type Edge struct {
@@ -20,7 +28,6 @@ type Edge struct {
 
 type SocialGraph struct {
 	nodes []Node
-	edges []Edge
 }
 
 func (node *Node) String() string {
@@ -30,26 +37,35 @@ func (node *Node) String() string {
 func buildSocialGraph(size, meanEdges int) SocialGraph {
 	graph := SocialGraph{
 		nodes: make([]Node, 0, size),
-		edges: make([]Edge, 0, meanEdges*size),
 	}
 	buildNodes(size, &graph)
-	buildEdges(size, &graph)
+	buildEdges(size, meanEdges, &graph)
 	return graph
 }
 
-func buildEdges(size int, graph *SocialGraph) {
+func buildEdges(size , meanEdges int, graph *SocialGraph) {
 	for i := 0; i < size; i++ {
-		edgesCount := randomEdgesCount()
+		edgesCount := randomEdgesCount(meanEdges)
 		for j := 0; j < edgesCount; j++ {
 			nodeIndex := rand.Intn(size-1) // Ignore possible duplicates
-			graph.edges = append(graph.edges, Edge{in: &graph.nodes[i], out: &graph.nodes[nodeIndex]})
+
+			in := &graph.nodes[i]
+			out := &graph.nodes[nodeIndex]
+			addEdge(in, out)
 		}
 	}
 }
 
-func randomEdgesCount() int {
+func addEdge(in *Node, out *Node) {
+	edge := Edge{in: in, out: out}
+	linkedEdge := &LinkedEdge{edge: edge, nextEdge: in.firstEdge, nextReverseEdge: out.firstReverseEdge}
+	in.firstEdge = linkedEdge
+	out.firstReverseEdge = linkedEdge
+}
+
+func randomEdgesCount(meanEdges int) int {
 	min := 0
-	max := 100
+	max := meanEdges * 2
 	return rand.Intn(max-min+1) + min
 }
 
@@ -77,10 +93,10 @@ func (graph *SocialGraph) lookup(phoneNumber PhoneNumber) []*Node {
 		return []*Node{}
 	}
 
-	for _, edge := range graph.edges {
-		if edge.in == node {
-			children = append(children, edge.out)
-		}
+	edge := node.firstEdge
+	for edge != nil {
+		children = append(children, edge.edge.out)
+		edge = edge.nextEdge
 	}
 	return children
 }
@@ -92,10 +108,10 @@ func (graph *SocialGraph) rlookup(phoneNumber PhoneNumber) []*Node {
 		return []*Node{}
 	}
 
-	for _, edge := range graph.edges {
-		if edge.out == node {
-			children = append(children, edge.in)
-		}
+	edge := node.firstReverseEdge
+	for edge != nil {
+		children = append(children, edge.edge.in)
+		edge = edge.nextReverseEdge
 	}
 	return children
 }
@@ -105,8 +121,14 @@ type Suggestions map[*Node]float64
 func (graph *SocialGraph) suggest(phoneNumber PhoneNumber) PairList {
 	suggestions := make(Suggestions)
 	node := graph.findNode(phoneNumber)
-	friends := graph.lookup(node.phoneNumber)
-	const depth = 3
+	if node == nil {
+		return PairList{}
+	}
+	friends := make(map[*Node]bool)
+	for _, friend := range graph.lookup(node.phoneNumber) {
+		friends[friend] = true
+	}
+	const depth = 2
 	var rec func (currentNode *Node, depth int, scoreRatio float64)
 	rec = func (currentNode *Node, depth int, scoreRatio float64) {
 		if depth <= 0 {
@@ -130,15 +152,9 @@ func (graph *SocialGraph) suggest(phoneNumber PhoneNumber) PairList {
 	return firstSuggestions(suggestions, 10)
 }
 
-func isIn(friends []*Node, child *Node) bool {
-	isIn := false
-	for _, friend := range friends {
-		if friend == child {
-			isIn = true
-			break
-		}
-	}
-	return isIn
+func isIn(friends map[*Node]bool, child *Node) bool {
+	_, ok := friends[child]
+	return ok
 }
 
 type Suggestion struct {
@@ -159,7 +175,11 @@ func main() {
 	meanEdges := 50
 	rand.Seed(time.Now().UnixNano())
 
-	graph := buildSocialGraph(100_000, meanEdges)
+	graph := buildSocialGraph(10_000, meanEdges)
+	PrintMemUsage()
+	runtime.GC()
+
+	graph = buildSocialGraph(100_000, meanEdges)
 	PrintMemUsage()
 
 	fmt.Println(graph.lookup(graph.nodes[0].phoneNumber))
