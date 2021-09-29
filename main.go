@@ -27,7 +27,7 @@ type Edge struct {
 }
 
 type SocialGraph struct {
-	nodes []Node
+	nodes []Node // Use map to improve graph.findNode performance
 }
 
 func (node *Node) String() string {
@@ -87,7 +87,7 @@ func generatePhoneNumber(i int) PhoneNumber {
 }
 
 func (graph *SocialGraph) lookup(phoneNumber PhoneNumber) []*Node {
-	children := make([]*Node, 0)
+	children := make([]*Node, 0) // We can store the len(node.edges) in Node to directly set children to the right capacity
 	node := graph.findNode(phoneNumber)
 	if node == nil {
 		return []*Node{}

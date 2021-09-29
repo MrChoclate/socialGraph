@@ -1,0 +1,18 @@
+goos: darwin
+goarch: amd64
+pkg: socialGraph
+cpu: Intel(R) Core(TM) i7-7700HQ CPU @ 2.80GHz
+BenchmarkLookupSmall-8        	  601640	      2480 ns/op
+BenchmarkLookupBig-8          	  542426	      2386 ns/op
+BenchmarkLookupBig2-8         	  559689	      3315 ns/op
+BenchmarkRlookupSmall-8       	  171172	      7271 ns/op
+BenchmarkRlookupBig-8         	  119176	     11221 ns/op
+BenchmarkRlookupBig2-8        	  110917	     13419 ns/op
+BenchmarkSuggestionsSmall-8   	    3039	    498934 ns/op
+BenchmarkSuggestionsBig-8     	    3120	    392904 ns/op
+BenchmarkSuggestionsBig2-8    	    2948	    603797 ns/op
+BenchmarkFindNodeSmall-8      	 2582774	       486.4 ns/op
+BenchmarkFindNodeBig-8        	 1000000	      1090 ns/op
+BenchmarkFindNodeBig2-8       	 1000000	      1284 ns/op
+PASS
+ok  	socialGraph	591.498s
